@@ -5,14 +5,14 @@ orbs:
 
 jobs:
   lint-cruft:
-    name: Check if automatic project update was successful
     executor:
       name: python/default
       tag: "3.12"
     steps:
       - checkout
       - run:
-          name: Fail if .rej files exist as structure update was not successful
+          name: Check if automatic project update was successful
+          # Fail if .rej files exist as structure update was not successful
           command: test -z "$(find . -iname '*.rej')"
 
   pre-commit:
