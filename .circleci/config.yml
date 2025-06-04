@@ -11,8 +11,9 @@ jobs:
       tag: "3.12"
     steps:
       - checkout
-      - name: Fail if .rej files exist as structure update was not successful
-        run: test -z "$(find . -iname '*.rej')"
+      - run:
+          name: Fail if .rej files exist as structure update was not successful
+          command: test -z "$(find . -iname '*.rej')"
 
   pre-commit:
     executor:
