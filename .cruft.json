@@ -1,0 +1,21 @@
+{
+  "template": "https://github.com/AlignmentResearch/python-lib-template",
+  "commit": "0cb57f7f415be06e13aedef37011d017fd032f80",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "author_name": "James Collins",
+      "author_email": "james@far.ai",
+      "github_username": "collijk",
+      "organization_name": "FAR AI, Inc.",
+      "github_organization_name": "AlignmentResearch",
+      "project_name": "Voltage Park SDK",
+      "project_slug": "voltage-park-sdk",
+      "package_name": "voltage_park_sdk",
+      "project_short_description": "Python library for accessing the Voltage Park API.",
+      "_template": "https://github.com/AlignmentResearch/python-lib-template",
+      "_commit": "0cb57f7f415be06e13aedef37011d017fd032f80"
+    }
+  },
+  "directory": null
+}

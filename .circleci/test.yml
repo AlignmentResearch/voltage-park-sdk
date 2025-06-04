@@ -1,0 +1,58 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@3.1.0
+
+jobs:
+  lint-cruft:
+    name: Check if automatic project update was successful
+    executor:
+      name: python/default
+      tag: "3.12"
+    steps:
+      - checkout
+      - name: Fail if .rej files exist as structure update was not successful
+        run: test -z "$(find . -iname '*.rej')"
+
+  pre-commit:
+    executor:
+      name: python/default
+      tag: "3.12"
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: uv
+      - run:
+          name: Run pre-commit
+          command: uv run pre-commit run --all-files
+  test:
+    executor:
+      name: python/default
+      tag: "3.12"
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: uv
+      - run:
+          name: Run tests
+          command: uv run pytest tests/
+
+  docs:
+    executor:
+      name: python/default
+      tag: "3.12"
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: uv
+      - run:
+          name: Build docs
+          command: uv run mkdocs build
+
+workflows:
+  test:
+    jobs:
+      - lint-cruft
+      - pre-commit
+      - test
+      - docs
