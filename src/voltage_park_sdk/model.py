@@ -1,46 +1,6 @@
-from typing import Generic, TypeVar
-
 from pydantic import BaseModel
 
-
-class GPUResource(BaseModel):
-    count: int
-
-
-class AvailableResources(BaseModel):
-    gpus: dict[str, GPUResource]
-    ram_gb: int
-    storage_gb: int
-    vcpu_count: int
-
-
-class VMPricing(BaseModel):
-    gpus_per_hr: str
-    vcpu_per_hr: str
-    ram_per_hr: str
-    storage_per_hr: str
-    total_associated_per_hr: str
-    total_disassociated_per_hr: str
-
-
-class PortForward(BaseModel):
-    internal_port: int
-    external_port: int
-
-
-class VirtualMachine(BaseModel):
-    id: str
-    hostnode_id: str
-    type: str
-    status: str
-    name: str
-    resources: AvailableResources
-    operating_system: str
-    pricing: VMPricing
-    public_ip: str
-    port_forwards: list[PortForward]
-    timestamp_creation: str
-    tags: list[str]
+from voltage_park_sdk.datamodel.shared import ListResponse
 
 
 class BaremetalNodeSpec(BaseModel):
@@ -140,20 +100,6 @@ class StorageVolume(BaseModel):
     order_ids: list[str]
     tenant_id: int
     vip: str
-
-
-ResponseT = TypeVar("ResponseT", bound=BaseModel)
-
-
-class ListResponse(BaseModel, Generic[ResponseT]):
-    results: list[ResponseT]
-    total_result_count: int
-    has_previous: bool
-    has_next: bool
-
-
-class VirtualMachines(ListResponse[VirtualMachine]):
-    pass
 
 
 class BaremetalLocations(ListResponse[BaremetalLocation]):

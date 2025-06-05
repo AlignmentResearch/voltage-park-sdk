@@ -9,6 +9,19 @@ from typing import Any, Literal
 
 import requests
 
+from voltage_park_sdk.datamodel import (
+    CloudInit,
+    VirtualMachine,
+    VirtualMachineDeployPayload,
+    VirtualMachineDeployResponse,
+    VirtualMachineLocation,
+    VirtualMachineLocations,
+    VirtualMachinePatchPayload,
+    VirtualMachinePatchResponse,
+    VirtualMachinePowerStatus,
+    VirtualMachinePowerStatus_,
+    VirtualMachines,
+)
 from voltage_park_sdk.model import (
     BaremetalLocation,
     BaremetalLocations,
@@ -22,8 +35,6 @@ from voltage_park_sdk.model import (
     StorageHourlyRate,
     StorageVolume,
     StorageVolumes,
-    VirtualMachine,
-    VirtualMachines,
 )
 
 
@@ -36,6 +47,42 @@ class VoltageParkClient:
     # Virtual machines #
     ####################
 
+    def get_virtual_machine_locations(self) -> VirtualMachineLocations:
+        endpoint = "virtual-machines/instant/locations/"
+        response = self.get(endpoint)
+        return VirtualMachineLocations(**response)
+
+    def get_virtual_machine_location(
+        self,
+        location_id: str,
+    ) -> VirtualMachineLocation:
+        endpoint = f"virtual-machines/instant/locations/{location_id}"
+        response = self.get(endpoint)
+        return VirtualMachineLocation(**response)
+
+    def post_new_virtual_machine(  # noqa: PLR0913
+        self,
+        config_id: str,
+        name: str,
+        password: str | None = None,
+        organization_ssh_keys: dict[str, Any] | None = None,
+        ssh_keys: list[str] | None = None,
+        cloud_init: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+    ) -> VirtualMachineDeployResponse:
+        payload = VirtualMachineDeployPayload(
+            config_id=config_id,
+            name=name,
+            password=password,
+            organization_ssh_keys=organization_ssh_keys,
+            ssh_keys=ssh_keys,
+            cloud_init=CloudInit(**cloud_init) if cloud_init else None,
+            tags=tags,
+        )
+        endpoint = "virtual-machines/instant/locations/"
+        response = self.post(endpoint, **payload.model_dump())
+        return VirtualMachineDeployResponse(**response)
+
     def get_virtual_machines(
         self,
         limit: int | None = None,
@@ -45,47 +92,45 @@ class VoltageParkClient:
         response = self.get(endpoint, limit=limit, offset=offset)
         return VirtualMachines(**response)
 
-    def get_virtual_machine(self, vm_id: str) -> VirtualMachine:
-        endpoint = f"virtual-machines/{vm_id}"
+    def get_virtual_machine(self, virtual_machine_id: str) -> VirtualMachine:
+        endpoint = f"virtual-machines/{virtual_machine_id}"
         response = self.get(endpoint)
         return VirtualMachine(**response)
 
-    def post_new_vm(  # noqa: PLR0913
-        self,
-        config_id: str,
-        password: str | None = None,
-        organization_ssh_keys: dict[str, Any] | None = None,
-        ssh_keys: list[str] | None = None,
-        cloud_init: dict[str, Any] | None = None,
-        tags: list[str] | None = None,
-    ) -> str:
-        endpoint = "virtual-machines/instant"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def patch_vm(
+    def patch_virtual_machine(
         self,
         virtual_machine_id: str,
         name: str | None = None,
         tags: list[str] | None = None,
-    ) -> None:
+    ) -> VirtualMachinePatchResponse:
+        payload = VirtualMachinePatchPayload(
+            name=name,
+            tags=tags,
+        )
         endpoint = f"virtual-machines/{virtual_machine_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
+        response = self.patch(endpoint, **payload.model_dump())
+        return VirtualMachinePatchResponse(**response)
+
+    def delete_virtual_machine(self, virtual_machine_id: str) -> None:
+        endpoint = f"virtual-machines/{virtual_machine_id}"
+        self.delete(endpoint)
 
     def put_vm_power_status(
         self,
         virtual_machine_id: str,
-        status: Literal["started", "stopped", "stopped_disassociated"],
-    ) -> None:
+        status: VirtualMachinePowerStatus_,
+    ) -> VirtualMachinePowerStatus:
+        payload = VirtualMachinePowerStatus(status=status)
         endpoint = f"virtual-machines/{virtual_machine_id}/power-status"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
+        response = self.put(endpoint, **payload.model_dump())
+        return VirtualMachinePowerStatus(**response)
 
-    def delete_virtual_machine(self, virtual_machine_id: str) -> None:
-        endpoint = f"virtual-machines/{virtual_machine_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
+    def post_relocate_virtual_machine(
+        self,
+        virtual_machine_id: str,
+    ) -> None:
+        endpoint = f"virtual-machines/{virtual_machine_id}/relocate"
+        self.post(endpoint)
 
     #########################
     # Cloudinit validation #
@@ -297,7 +342,7 @@ class VoltageParkClient:
     # Public helpers #
     ##################
 
-    def get(self, endpoint: str, **params: int | str | bool | None) -> Any:
+    def get(self, endpoint: str, **params: Any) -> Any:
         params = {k: v for k, v in params.items() if v is not None}
         response = requests.get(
             f"{self._api_url}{endpoint}",
@@ -307,7 +352,7 @@ class VoltageParkClient:
         )
         return response.json()
 
-    def post(self, endpoint: str, **params: int | str | bool | None) -> Any:
+    def post(self, endpoint: str, **params: Any) -> Any:
         params = {k: v for k, v in params.items() if v is not None}
         response = requests.post(
             f"{self._api_url}{endpoint}",
@@ -317,7 +362,7 @@ class VoltageParkClient:
         )
         return response.json()
 
-    def patch(self, endpoint: str, **params: int | str | bool | None) -> Any:
+    def patch(self, endpoint: str, **params: Any) -> Any:
         params = {k: v for k, v in params.items() if v is not None}
         response = requests.patch(
             f"{self._api_url}{endpoint}",
@@ -335,7 +380,7 @@ class VoltageParkClient:
         )
         return response.json()
 
-    def put(self, endpoint: str, **params: int | str | bool | None) -> Any:
+    def put(self, endpoint: str, **params: Any) -> Any:
         params = {k: v for k, v in params.items() if v is not None}
         response = requests.put(
             f"{self._api_url}{endpoint}",
