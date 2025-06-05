@@ -355,3 +355,35 @@ class VoltageParkClient:
         endpoint = f"storage/{storage_id}"
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
+
+    ###################
+    # Delete requests #
+    ###################
+
+    def delete(self, endpoint: str) -> Any:
+        response = requests.delete(
+            f"{self._api_url}{endpoint}",
+            headers=self._headers("delete"),
+            timeout=10,
+        )
+        return response.json()
+
+    def delete_virtual_machine(self, virtual_machine_id: str) -> None:
+        endpoint = f"virtual-machines/{virtual_machine_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def delete_baremetal_rental(self, baremetal_rental_id: str) -> None:
+        endpoint = f"bare-metal/{baremetal_rental_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def delete_ssh_key(self, ssh_key_id: str) -> None:
+        endpoint = f"organization/ssh-keys/{ssh_key_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def delete_storage_volume(self, storage_id: str) -> None:
+        endpoint = f"storage/{storage_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
