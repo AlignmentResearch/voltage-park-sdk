@@ -9,9 +9,25 @@ from typing import Any, Literal
 
 import requests
 
-from voltage_park_sdk.datamodel import (
-    CloudInit,
+from voltage_park_sdk.datamodel.baremetal import (
+    BaremetalLocations,
+    BaremetalRentals,
+)
+from voltage_park_sdk.datamodel.organization import (
+    Organization,
+    OrganizationPatchPayload,
+    OrganizationPatchResponse,
+    SSHKeyCreatePayload,
+    SSHKeyCreateResponse,
+    SSHKeys,
+)
+from voltage_park_sdk.datamodel.shared import (
+    OrganizationSSHKey,
+    get_organization_ssh_key,
+)
+from voltage_park_sdk.datamodel.virtual_machines import (
     VirtualMachine,
+    VirtualMachineCloudInit,
     VirtualMachineDeployPayload,
     VirtualMachineDeployResponse,
     VirtualMachineLocation,
@@ -19,19 +35,13 @@ from voltage_park_sdk.datamodel import (
     VirtualMachinePatchPayload,
     VirtualMachinePatchResponse,
     VirtualMachinePowerStatus,
-    VirtualMachinePowerStatus_,
+    VirtualMachinePowerStatusOptions,
     VirtualMachines,
 )
 from voltage_park_sdk.model import (
-    BaremetalLocation,
-    BaremetalLocations,
-    BaremetalRental,
-    BaremetalRentals,
     BillingHourlyRate,
     BillingTransactions,
     MonthlyBillingReport,
-    SSHKey,
-    SSHKeys,
     StorageHourlyRate,
     StorageVolume,
     StorageVolumes,
@@ -42,6 +52,52 @@ class VoltageParkClient:
     def __init__(self, token: str | Path) -> None:
         self._api_url = "https://cloud-api.voltagepark.com/api/v1/"
         self._token = token
+
+    ################
+    # Organization #
+    ################
+
+    def get_organization(self) -> Organization:
+        endpoint = "organization"
+        response = self.get(endpoint)
+        return Organization(**response)
+
+    def patch_organization(
+        self,
+        billing_notification_target_emails: list[str],
+    ) -> Organization:
+        payload = OrganizationPatchPayload(
+            billing_notification_target_emails=billing_notification_target_emails,
+        )
+        endpoint = "organization"
+        response = self.patch(endpoint, **payload.model_dump())
+        return OrganizationPatchResponse(**response)
+
+    def get_ssh_keys(
+        self,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> SSHKeys:
+        endpoint = "organization/ssh-keys"
+        response = self.get(endpoint, limit=limit, offset=offset)
+        return SSHKeys(**response)
+
+    def post_ssh_key(
+        self,
+        name: str,
+        content: str,
+    ) -> SSHKeyCreateResponse:
+        payload = SSHKeyCreatePayload(
+            name=name,
+            content=content,
+        )
+        endpoint = "organization/ssh-keys"
+        response = self.post(endpoint, **payload.model_dump())
+        return SSHKeyCreateResponse(**response)
+
+    def delete_ssh_key(self, ssh_key_id: str) -> None:
+        endpoint = f"organization/ssh-keys/{ssh_key_id}"
+        self.delete(endpoint)
 
     ####################
     # Virtual machines #
@@ -65,18 +121,22 @@ class VoltageParkClient:
         config_id: str,
         name: str,
         password: str | None = None,
-        organization_ssh_keys: dict[str, Any] | None = None,
+        organization_ssh_keys: OrganizationSSHKey | dict[str, Any] | None = None,
         ssh_keys: list[str] | None = None,
-        cloud_init: dict[str, Any] | None = None,
+        cloud_init: VirtualMachineCloudInit | dict[str, Any] | None = None,
         tags: list[str] | None = None,
     ) -> VirtualMachineDeployResponse:
+        organization_ssh_keys = get_organization_ssh_key(organization_ssh_keys)
+        if isinstance(cloud_init, dict):
+            cloud_init = VirtualMachineCloudInit(**cloud_init)
+
         payload = VirtualMachineDeployPayload(
             config_id=config_id,
             name=name,
             password=password,
             organization_ssh_keys=organization_ssh_keys,
             ssh_keys=ssh_keys,
-            cloud_init=CloudInit(**cloud_init) if cloud_init else None,
+            cloud_init=cloud_init,
             tags=tags,
         )
         endpoint = "virtual-machines/instant/locations/"
@@ -118,7 +178,7 @@ class VoltageParkClient:
     def put_vm_power_status(
         self,
         virtual_machine_id: str,
-        status: VirtualMachinePowerStatus_,
+        status: VirtualMachinePowerStatusOptions,
     ) -> VirtualMachinePowerStatus:
         payload = VirtualMachinePowerStatus(status=status)
         endpoint = f"virtual-machines/{virtual_machine_id}/power-status"
@@ -132,19 +192,6 @@ class VoltageParkClient:
         endpoint = f"virtual-machines/{virtual_machine_id}/relocate"
         self.post(endpoint)
 
-    #########################
-    # Cloudinit validation #
-    #########################
-
-    def post_validate_cloudinit_script(
-        self,
-        type: Literal["instant-vm", "vm", "baremetal"],  # noqa: A002
-        content: str,
-    ) -> str:
-        endpoint = "validate/cloudinit"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
     #####################
     # Baremetal rentals #
     #####################
@@ -153,23 +200,6 @@ class VoltageParkClient:
         endpoint = "bare-metal/locations/"
         response = self.get(endpoint)
         return BaremetalLocations(**response)
-
-    def get_baremetal_location(self, location_id: str) -> BaremetalLocation:
-        msg = "Not implemented by the API"
-        raise NotImplementedError(msg)
-
-    def get_baremetal_rentals(
-        self,
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> BaremetalRentals:
-        endpoint = "bare-metal/"
-        response = self.get(endpoint, limit=limit, offset=offset)
-        return BaremetalRentals(**response)
-
-    def get_baremetal_rental(self, rental_id: str) -> BaremetalRental:
-        msg = "Not implemented by the API"
-        raise NotImplementedError(msg)
 
     def post_new_baremetal_rental(  # noqa: PLR0913
         self,
@@ -186,6 +216,15 @@ class VoltageParkClient:
         endpoint = "bare-metal/"
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
+
+    def get_baremetal_rentals(
+        self,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> BaremetalRentals:
+        endpoint = "bare-metal/"
+        response = self.get(endpoint, limit=limit, offset=offset)
+        return BaremetalRentals(**response)
 
     def post_reboot_baremetal_rental(
         self,
@@ -264,34 +303,16 @@ class VoltageParkClient:
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
 
-    ############
-    # SSH keys #
-    ############
+    #########################
+    # Cloudinit validation #
+    #########################
 
-    def get_ssh_keys(
+    def post_validate_cloudinit_script(
         self,
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> SSHKeys:
-        endpoint = "organization/ssh-keys"
-        response = self.get(endpoint, limit=limit, offset=offset)
-        return SSHKeys(**response)
-
-    def get_ssh_key(self, ssh_key_id: str) -> SSHKey:
-        msg = "Not implemented by the API"
-        raise NotImplementedError(msg)
-
-    def post_new_ssh_key(
-        self,
-        name: str,
+        type: Literal["instant-vm", "vm", "baremetal"],  # noqa: A002
         content: str,
     ) -> str:
-        endpoint = "organization/ssh-keys"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def delete_ssh_key(self, ssh_key_id: str) -> None:
-        endpoint = f"organization/ssh-keys/{ssh_key_id}"
+        endpoint = "validate/cloudinit"
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
 
@@ -378,7 +399,10 @@ class VoltageParkClient:
             headers=self._headers("delete"),
             timeout=10,
         )
-        return response.json()
+        try:
+            return response.json()
+        except json.JSONDecodeError:
+            return None
 
     def put(self, endpoint: str, **params: Any) -> Any:
         params = {k: v for k, v in params.items() if v is not None}

@@ -3,50 +3,6 @@ from pydantic import BaseModel
 from voltage_park_sdk.datamodel.shared import ListResponse
 
 
-class BaremetalNodeSpec(BaseModel):
-    gpu_model: str
-    gpu_count: int
-    cpu_model: str
-    cpu_count: int
-    ram_gb: int
-    storage_gb: int
-
-
-class BaremetalLocation(BaseModel):
-    id: str
-    gpu_count_ethernet: int
-    gpu_price_ethernet: float
-    gpu_count_infiniband: int
-    gpu_price_infiniband: float
-    specs_per_node: BaremetalNodeSpec
-
-
-class NodeNetworking(BaseModel):
-    public_ip: str
-    private_ip: str
-
-
-class BaremetalRental(BaseModel):
-    id: str
-    name: str
-    creation_timestamp: str
-    status: str
-    power_status: str | None = None
-    node_count: int | None = None
-    specs_per_node: BaremetalNodeSpec | None = None
-    rate_hourly: str
-    network_type: str | None = None
-    username: str | None = None
-    node_networking: list[NodeNetworking] | None = None
-    sub_order: str | None = None
-    storage_id: str | None
-    storage_pv: str | None
-    storage_pvc: str | None
-    k8s_cluster_id: str | None
-    kubeconfig: str | None
-    tags: list[str]
-
-
 class BillingHourlyRate(BaseModel):
     rate_hourly: str
 
@@ -81,12 +37,6 @@ class MonthlyBillingReport(BaseModel):
     balance_delta_in_period: str
 
 
-class SSHKey(BaseModel):
-    id: str
-    name: str
-    content: str
-
-
 class StorageHourlyRate(BaseModel):
     hourly_rate_per_gb: str
 
@@ -102,19 +52,7 @@ class StorageVolume(BaseModel):
     vip: str
 
 
-class BaremetalLocations(ListResponse[BaremetalLocation]):
-    pass
-
-
-class BaremetalRentals(ListResponse[BaremetalRental]):
-    pass
-
-
 class BillingTransactions(ListResponse[BillingTransaction]):
-    pass
-
-
-class SSHKeys(ListResponse[SSHKey]):
     pass
 
 

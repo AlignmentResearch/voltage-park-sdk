@@ -2,14 +2,20 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from voltage_park_sdk.datamodel.shared import CloudInit, ListResponse
+from voltage_park_sdk.datamodel.shared import (
+    CloudInitFile,
+    GPUModelOptions,
+    ListResponse,
+    OrganizationSSHKey,
+    OrganzationSSHKeyNone,
+)
 
-VirtualMachineType = Literal[
+VirtualMachineTypeOptions = Literal[
     "ondem",
     "spot",
     "subscription",
 ]
-VirtualMachineStatus = Literal[
+VirtualMachineStatusOptions = Literal[
     "Running",
     "StoppedDisassociated",
     "Stopped",
@@ -17,12 +23,12 @@ VirtualMachineStatus = Literal[
     "Outbid",
     "Relocating",
 ]
-VirtualMachinePowerStatus_ = Literal[
+VirtualMachinePowerStatusOptions = Literal[
     "started",
     "stopped",
     "stopped_disassociated",
 ]
-VirtualMachineOperatingSystem = Literal[
+VirtualMachineOperatingSystemOptions = Literal[
     "Ubuntu 20.04 LTS",
     "Ubuntu 22.04 LTS",
     "TensorML 20 TensorFlow",
@@ -37,7 +43,7 @@ VirtualMachineOperatingSystem = Literal[
 
 
 class VirtualMachinePowerStatus(BaseModel):
-    status: VirtualMachinePowerStatus_ = Field(
+    status: VirtualMachinePowerStatusOptions = Field(
         description="The power status of the virtual machine"
     )
 
@@ -47,7 +53,7 @@ class GPUResource(BaseModel):
 
 
 class VirtualMachineResources(BaseModel):
-    gpus: dict[str, GPUResource] = Field(
+    gpus: dict[GPUModelOptions, GPUResource] = Field(
         description="Mapping between GPU type and number of GPUs"
     )
     ram_gb: int = Field(description="The amount of RAM in GB", gt=0)
@@ -60,7 +66,7 @@ class VirtualMachinePreset(BaseModel):
     resources: VirtualMachineResources = Field(
         description="The resources available in this preset"
     )
-    operating_system: VirtualMachineOperatingSystem = Field(
+    operating_system: VirtualMachineOperatingSystemOptions = Field(
         description="The operating system of the preset"
     )
     compute_rate_hourly: str = Field(description="The compute rate per hour")
@@ -107,15 +113,17 @@ class PortForward(BaseModel):
 class VirtualMachine(BaseModel):
     id: str = Field(description="The ID of the virtual machine")
     hostnode_id: str = Field(description="The ID of the host node")
-    type: VirtualMachineType = Field(description="The type of the virtual machine")
-    status: VirtualMachineStatus = Field(
+    type: VirtualMachineTypeOptions = Field(
+        description="The type of the virtual machine"
+    )
+    status: VirtualMachineStatusOptions = Field(
         description="The status of the virtual machine"
     )
     name: str = Field(description="The name of the virtual machine")
     resources: VirtualMachineResources = Field(
         description="The resources of the virtual machine"
     )
-    operating_system: VirtualMachineOperatingSystem = Field(
+    operating_system: VirtualMachineOperatingSystemOptions = Field(
         description="The operating system of the virtual machine"
     )
     pricing: VirtualMachinePricing = Field(
@@ -136,23 +144,34 @@ class VirtualMachines(ListResponse[VirtualMachine]):
     pass
 
 
+class VirtualMachineCloudInit(BaseModel):
+    packages: list[str] | None = None
+    write_files: list[CloudInitFile] | None = None
+    runcmd: list[str] | None = None
+
+
 class VirtualMachineDeployPayload(BaseModel):
     config_id: str = Field(description="The ID of the config to deploy")
     name: str = Field(description="The name of the virtual machine")
     password: str | None = Field(
         description="The password to use for the virtual machine"
     )
-    organization_ssh_keys: dict[str, str] | None = Field(
-        description="The organization SSH keys to use for the virtual machine"
+    organization_ssh_keys: OrganizationSSHKey = Field(
+        description="The organization SSH keys to use for the virtual machine",
+        discriminator="mode",
+        default=OrganzationSSHKeyNone(),
     )
     ssh_keys: list[str] | None = Field(
-        description="The SSH keys to use for the virtual machine"
+        description="The SSH keys to use for the virtual machine",
+        default=None,
     )
-    cloud_init: CloudInit | None = Field(
-        description="The cloud init to use for the virtual machine"
+    cloud_init: VirtualMachineCloudInit | None = Field(
+        description="The cloud init to use for the virtual machine",
+        default=None,
     )
     tags: list[str] | None = Field(
-        description="The tags to use for the virtual machine"
+        description="The tags to use for the virtual machine",
+        default=None,
     )
 
 
