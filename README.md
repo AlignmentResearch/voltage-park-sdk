@@ -8,6 +8,18 @@
 
 Python library for accessing the Voltage Park API.
 
+## Usage
+
+Create a client using your Voltage Park API token:
+
+```python
+from voltage_park_sdk import VoltageParkClient
+
+client = VoltageParkClient(token="YOUR_API_TOKEN")
+```
+
+### TODO: DOCUMENT METHODS HERE
+
 ## Development
 
 This package uses [`uv`](https://docs.astral.sh/uv) to manage its toolchain.
