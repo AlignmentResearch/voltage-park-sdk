@@ -1,3 +1,7 @@
+# We are incrementally adding methods to the client as we need them, but
+# writing method signatures for the whole API, so we need to ignore unused
+# args and variables for the time being.
+# ruff: noqa: ARG002, F841
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
@@ -227,9 +231,9 @@ class VoltageParkClient:
             msg = f"{param_name} must be in YYYY-MM-DD format (e.g. '2024-01-01')"
             raise ValueError(msg) from e
 
-    ################
+    #################
     # POST requests #
-    ################
+    #################
 
     def post(self, endpoint: str, **params: int | str | bool | None) -> Any:
         params = {k: v for k, v in params.items() if v is not None}
@@ -250,6 +254,7 @@ class VoltageParkClient:
         cloud_init: dict[str, Any] | None = None,
         tags: list[str] | None = None,
     ) -> str:
+        endpoint = "virtual-machines/instant"
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
 
@@ -265,14 +270,16 @@ class VoltageParkClient:
         tags: list[str] | None = None,
         cloudinit_script: dict[str, Any] | None = None,
     ) -> str:
+        endpoint = "bare-metal/"
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
 
     def post_reboot_baremetal_rental(
         self,
-        rental_id: str,
+        baremetal_rental_id: str,
         public_ips: list[str],
     ) -> None:
+        endpoint = f"bare-metal/{baremetal_rental_id}/reboot"
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
 
@@ -281,6 +288,7 @@ class VoltageParkClient:
         name: str,
         content: str,
     ) -> str:
+        endpoint = "organization/ssh-keys"
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
 
@@ -289,6 +297,7 @@ class VoltageParkClient:
         type: Literal["instant-vm", "vm", "baremetal"],  # noqa: A002
         content: str,
     ) -> str:
+        endpoint = "validate/cloudinit"
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
 
@@ -298,5 +307,51 @@ class VoltageParkClient:
         name: str,
         order_ids: list[str] | None = None,
     ) -> str:
+        endpoint = "storage/"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    ##################
+    # Patch requests #
+    ##################
+
+    def patch(self, endpoint: str, **params: int | str | bool | None) -> Any:
+        params = {k: v for k, v in params.items() if v is not None}
+        response = requests.patch(
+            f"{self._api_url}{endpoint}",
+            headers=self._headers("patch"),
+            params=params,
+            timeout=10,
+        )
+        return response.json()
+
+    def patch_vm(
+        self,
+        virtual_machine_id: str,
+        name: str | None = None,
+        tags: list[str] | None = None,
+    ) -> None:
+        endpoint = f"virtual-machines/{virtual_machine_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def patch_baremetal_rental(
+        self,
+        baremetal_rental_id: str,
+        name: str | None = None,
+        tags: list[str] | None = None,
+    ) -> None:
+        endpoint = f"bare-metal/{baremetal_rental_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def patch_storage_volume(
+        self,
+        storage_id: str,
+        size_in_gb: int | None = None,
+        name: str | None = None,
+        order_ids: list[str] | None = None,
+    ) -> None:
+        endpoint = f"storage/{storage_id}"
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
