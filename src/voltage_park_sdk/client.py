@@ -2,6 +2,7 @@
 # writing method signatures for the whole API, so we need to ignore unused
 # args and variables for the time being.
 # ruff: noqa: ARG002, F841
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
@@ -36,52 +37,9 @@ class VoltageParkClient:
         self._api_url = "https://cloud-api.voltagepark.com/api/v1/"
         self._token = token
 
-    def _headers(
-        self,
-        operation: Literal["get", "post", "put", "patch", "delete"],
-        **overrides: str,
-    ) -> dict[str, str]:
-        operation_headers: dict[str, str] = {
-            "get": {
-                "Authorization": f"Bearer {self._token}",
-                "Accept": "*/*",
-            },
-            "post": {
-                "Authorization": f"Bearer {self._token}",
-                "Content-Type": "application/json",
-            },
-            "put": {
-                "Authorization": f"Bearer {self._token}",
-                "Content-Type": "application/json",
-            },
-            "patch": {
-                "Authorization": f"Bearer {self._token}",
-                "Content-Type": "application/json",
-            },
-            "delete": {
-                "Authorization": f"Bearer {self._token}",
-                "Accept": "*/*",
-            },
-        }[operation]
-        operation_headers.update(overrides)
-        return operation_headers
-
-    def _params(self, **params: str) -> dict[str, str]:
-        return {k: v for k, v in params.items() if v is not None}
-
-    ################
-    # GET requests #
-    ################
-
-    def get(self, endpoint: str, **params: int | str | bool | None) -> Any:
-        params = {k: v for k, v in params.items() if v is not None}
-        response = requests.get(
-            f"{self._api_url}{endpoint}",
-            headers=self._headers("get"),
-            params=params,
-            timeout=10,
-        )
-        return response.json()
+    #############
+    # Locations #
+    #############
 
     def get_locations(
         self,
@@ -97,6 +55,10 @@ class VoltageParkClient:
         response = self.get(endpoint)
         return Location(**response)
 
+    #############
+    # Hostnodes #
+    #############
+
     def get_hostnodes(self) -> HostNodes:
         msg = "Not implemented by the API"
         raise NotImplementedError(msg)
@@ -105,6 +67,10 @@ class VoltageParkClient:
         endpoint = f"hostnodes/{hostnode_id}"
         response = self.get(endpoint)
         return HostNode(**response)
+
+    ####################
+    # Virtual machines #
+    ####################
 
     def get_virtual_machines(
         self,
@@ -120,6 +86,47 @@ class VoltageParkClient:
         response = self.get(endpoint)
         return VirtualMachine(**response)
 
+    def post_new_vm(  # noqa: PLR0913
+        self,
+        config_id: str,
+        password: str | None = None,
+        organization_ssh_keys: dict[str, Any] | None = None,
+        ssh_keys: list[str] | None = None,
+        cloud_init: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+    ) -> str:
+        endpoint = "virtual-machines/instant"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def patch_vm(
+        self,
+        virtual_machine_id: str,
+        name: str | None = None,
+        tags: list[str] | None = None,
+    ) -> None:
+        endpoint = f"virtual-machines/{virtual_machine_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def put_vm_power_status(
+        self,
+        virtual_machine_id: str,
+        status: Literal["started", "stopped", "stopped_disassociated"],
+    ) -> None:
+        endpoint = f"virtual-machines/{virtual_machine_id}/power-status"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def delete_virtual_machine(self, virtual_machine_id: str) -> None:
+        endpoint = f"virtual-machines/{virtual_machine_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    ##########################
+    # Instant deploy presets #
+    ##########################
+
     def get_instant_deploy_presets(
         self,
         available: bool | None = None,
@@ -132,6 +139,23 @@ class VoltageParkClient:
         endpoint = f"instant-deploy-presets/{preset_id}"
         response = self.get(endpoint)
         return InstantDeployPreset(**response)
+
+    #########################
+    # Cloudinit validation #
+    #########################
+
+    def post_validate_cloudinit_script(
+        self,
+        type: Literal["instant-vm", "vm", "baremetal"],  # noqa: A002
+        content: str,
+    ) -> str:
+        endpoint = "validate/cloudinit"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    #####################
+    # Baremetal rentals #
+    #####################
 
     def get_baremetal_locations(self) -> BaremetalLocations:
         endpoint = "bare-metal/locations/"
@@ -155,10 +179,143 @@ class VoltageParkClient:
         msg = "Not implemented by the API"
         raise NotImplementedError(msg)
 
+    def post_new_baremetal_rental(  # noqa: PLR0913
+        self,
+        location_id: str,
+        gpu_count: int,
+        network_type: Literal["infiniband", "ethernet"],
+        organization_ssh_keys: dict[str, Any] | None = None,
+        ssh_keys: list[str] | None = None,
+        suborder: int | None = None,
+        storage_id: str | None = None,
+        tags: list[str] | None = None,
+        cloudinit_script: dict[str, Any] | None = None,
+    ) -> str:
+        endpoint = "bare-metal/"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def post_reboot_baremetal_rental(
+        self,
+        baremetal_rental_id: str,
+        public_ips: list[str],
+    ) -> None:
+        endpoint = f"bare-metal/{baremetal_rental_id}/reboot"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def patch_baremetal_rental(
+        self,
+        baremetal_rental_id: str,
+        name: str | None = None,
+        tags: list[str] | None = None,
+    ) -> None:
+        endpoint = f"bare-metal/{baremetal_rental_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def put_baremetal_rental_power_status(
+        self,
+        baremetal_rental_id: str,
+        status: Literal["started", "stopped"],
+    ) -> None:
+        endpoint = f"bare-metal/{baremetal_rental_id}/power-status"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def delete_baremetal_rental(self, baremetal_rental_id: str) -> None:
+        endpoint = f"bare-metal/{baremetal_rental_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    ###########
+    # Storage #
+    ###########
+
+    def get_storage_volumes(
+        self,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> StorageVolumes:
+        endpoint = "storage"
+        response = self.get(endpoint, limit=limit, offset=offset)
+        return StorageVolumes(**response)
+
+    def get_storage_volume(self, storage_id: str) -> StorageVolume:
+        endpoint = f"storage/{storage_id}"
+        response = self.get(endpoint)
+        return StorageVolume(**response)
+
+    def post_new_storage_volume(
+        self,
+        size_in_gb: int,
+        name: str,
+        order_ids: list[str] | None = None,
+    ) -> str:
+        endpoint = "storage"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def patch_storage_volume(
+        self,
+        storage_id: str,
+        size_in_gb: int | None = None,
+        name: str | None = None,
+        order_ids: list[str] | None = None,
+    ) -> None:
+        endpoint = f"storage/{storage_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def delete_storage_volume(self, storage_id: str) -> None:
+        endpoint = f"storage/{storage_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    ############
+    # SSH keys #
+    ############
+
+    def get_ssh_keys(
+        self,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> SSHKeys:
+        endpoint = "organization/ssh-keys"
+        response = self.get(endpoint, limit=limit, offset=offset)
+        return SSHKeys(**response)
+
+    def get_ssh_key(self, ssh_key_id: str) -> SSHKey:
+        msg = "Not implemented by the API"
+        raise NotImplementedError(msg)
+
+    def post_new_ssh_key(
+        self,
+        name: str,
+        content: str,
+    ) -> str:
+        endpoint = "organization/ssh-keys"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def delete_ssh_key(self, ssh_key_id: str) -> None:
+        endpoint = f"organization/ssh-keys/{ssh_key_id}"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    ###########
+    # Billing #
+    ###########
+
     def get_billing_hourly_rates(self) -> BillingHourlyRate:
         endpoint = "billing/hourly-rate"
         response = self.get(endpoint)
         return BillingHourlyRate(**response)
+
+    def get_storage_hourly_rate(self) -> StorageHourlyRate:
+        endpoint = "storage/hourly-rate"
+        response = self.get(endpoint)
+        return StorageHourlyRate(**response)
 
     def get_billing_transactions(
         self,
@@ -189,37 +346,91 @@ class VoltageParkClient:
         response = self.get(endpoint)
         return MonthlyBillingReport(**response)
 
-    def get_ssh_keys(
+    ##################
+    # Public helpers #
+    ##################
+
+    def get(self, endpoint: str, **params: int | str | bool | None) -> Any:
+        params = {k: v for k, v in params.items() if v is not None}
+        response = requests.get(
+            f"{self._api_url}{endpoint}",
+            headers=self._headers("get"),
+            data=json.dumps(params),
+            timeout=10,
+        )
+        return response.json()
+
+    def post(self, endpoint: str, **params: int | str | bool | None) -> Any:
+        params = {k: v for k, v in params.items() if v is not None}
+        response = requests.post(
+            f"{self._api_url}{endpoint}",
+            headers=self._headers("post"),
+            data=json.dumps(params),
+            timeout=10,
+        )
+        return response.json()
+
+    def patch(self, endpoint: str, **params: int | str | bool | None) -> Any:
+        params = {k: v for k, v in params.items() if v is not None}
+        response = requests.patch(
+            f"{self._api_url}{endpoint}",
+            headers=self._headers("patch"),
+            data=json.dumps(params),
+            timeout=10,
+        )
+        return response.json()
+
+    def delete(self, endpoint: str) -> Any:
+        response = requests.delete(
+            f"{self._api_url}{endpoint}",
+            headers=self._headers("delete"),
+            timeout=10,
+        )
+        return response.json()
+
+    def put(self, endpoint: str, **params: int | str | bool | None) -> Any:
+        params = {k: v for k, v in params.items() if v is not None}
+        response = requests.put(
+            f"{self._api_url}{endpoint}",
+            headers=self._headers("put"),
+            data=json.dumps(params),
+            timeout=10,
+        )
+        return response.json()
+
+    ###################
+    # Private helpers #
+    ###################
+
+    def _headers(
         self,
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> SSHKeys:
-        endpoint = "organization/ssh-keys"
-        response = self.get(endpoint, limit=limit, offset=offset)
-        return SSHKeys(**response)
-
-    def get_ssh_key(self, ssh_key_id: str) -> SSHKey:
-        msg = "Not implemented by the API"
-        raise NotImplementedError(msg)
-
-    def get_storage_hourly_rate(self) -> StorageHourlyRate:
-        endpoint = "storage/hourly-rate"
-        response = self.get(endpoint)
-        return StorageHourlyRate(**response)
-
-    def get_storage_volumes(
-        self,
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> StorageVolumes:
-        endpoint = "storage"
-        response = self.get(endpoint, limit=limit, offset=offset)
-        return StorageVolumes(**response)
-
-    def get_storage_volume(self, storage_id: str) -> StorageVolume:
-        endpoint = f"storage/{storage_id}"
-        response = self.get(endpoint)
-        return StorageVolume(**response)
+        operation: Literal["get", "post", "put", "patch", "delete"],
+        **overrides: str,
+    ) -> dict[str, str]:
+        operation_headers: dict[str, str] = {
+            "get": {
+                "Authorization": f"Bearer {self._token}",
+                "Accept": "*/*",
+            },
+            "post": {
+                "Authorization": f"Bearer {self._token}",
+                "Content-Type": "application/json",
+            },
+            "put": {
+                "Authorization": f"Bearer {self._token}",
+                "Content-Type": "application/json",
+            },
+            "patch": {
+                "Authorization": f"Bearer {self._token}",
+                "Content-Type": "application/json",
+            },
+            "delete": {
+                "Authorization": f"Bearer {self._token}",
+                "Accept": "*/*",
+            },
+        }[operation]
+        operation_headers.update(overrides)
+        return operation_headers
 
     @staticmethod
     def _validate_date_format(date_str: str | None, param_name: str) -> None:
@@ -230,192 +441,3 @@ class VoltageParkClient:
         except ValueError as e:
             msg = f"{param_name} must be in YYYY-MM-DD format (e.g. '2024-01-01')"
             raise ValueError(msg) from e
-
-    #################
-    # POST requests #
-    #################
-
-    def post(self, endpoint: str, **params: int | str | bool | None) -> Any:
-        params = {k: v for k, v in params.items() if v is not None}
-        response = requests.post(
-            f"{self._api_url}{endpoint}",
-            headers=self._headers("post"),
-            params=params,
-            timeout=10,
-        )
-        return response.json()
-
-    def post_new_vm(  # noqa: PLR0913
-        self,
-        config_id: str,
-        password: str | None = None,
-        organization_ssh_keys: dict[str, Any] | None = None,
-        ssh_keys: list[str] | None = None,
-        cloud_init: dict[str, Any] | None = None,
-        tags: list[str] | None = None,
-    ) -> str:
-        endpoint = "virtual-machines/instant"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def post_new_baremetal_rental(  # noqa: PLR0913
-        self,
-        location_id: str,
-        gpu_count: int,
-        network_type: Literal["infiniband", "ethernet"],
-        organization_ssh_keys: dict[str, Any] | None = None,
-        ssh_keys: list[str] | None = None,
-        suborder: int | None = None,
-        storage_id: str | None = None,
-        tags: list[str] | None = None,
-        cloudinit_script: dict[str, Any] | None = None,
-    ) -> str:
-        endpoint = "bare-metal/"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def post_reboot_baremetal_rental(
-        self,
-        baremetal_rental_id: str,
-        public_ips: list[str],
-    ) -> None:
-        endpoint = f"bare-metal/{baremetal_rental_id}/reboot"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def post_new_ssh_key(
-        self,
-        name: str,
-        content: str,
-    ) -> str:
-        endpoint = "organization/ssh-keys"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def post_validate_cloudinit_script(
-        self,
-        type: Literal["instant-vm", "vm", "baremetal"],  # noqa: A002
-        content: str,
-    ) -> str:
-        endpoint = "validate/cloudinit"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def post_new_storage_volume(
-        self,
-        size_in_gb: int,
-        name: str,
-        order_ids: list[str] | None = None,
-    ) -> str:
-        endpoint = "storage/"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    ##################
-    # Patch requests #
-    ##################
-
-    def patch(self, endpoint: str, **params: int | str | bool | None) -> Any:
-        params = {k: v for k, v in params.items() if v is not None}
-        response = requests.patch(
-            f"{self._api_url}{endpoint}",
-            headers=self._headers("patch"),
-            params=params,
-            timeout=10,
-        )
-        return response.json()
-
-    def patch_vm(
-        self,
-        virtual_machine_id: str,
-        name: str | None = None,
-        tags: list[str] | None = None,
-    ) -> None:
-        endpoint = f"virtual-machines/{virtual_machine_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def patch_baremetal_rental(
-        self,
-        baremetal_rental_id: str,
-        name: str | None = None,
-        tags: list[str] | None = None,
-    ) -> None:
-        endpoint = f"bare-metal/{baremetal_rental_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def patch_storage_volume(
-        self,
-        storage_id: str,
-        size_in_gb: int | None = None,
-        name: str | None = None,
-        order_ids: list[str] | None = None,
-    ) -> None:
-        endpoint = f"storage/{storage_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    ###################
-    # Delete requests #
-    ###################
-
-    def delete(self, endpoint: str) -> Any:
-        response = requests.delete(
-            f"{self._api_url}{endpoint}",
-            headers=self._headers("delete"),
-            timeout=10,
-        )
-        return response.json()
-
-    def delete_virtual_machine(self, virtual_machine_id: str) -> None:
-        endpoint = f"virtual-machines/{virtual_machine_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def delete_baremetal_rental(self, baremetal_rental_id: str) -> None:
-        endpoint = f"bare-metal/{baremetal_rental_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def delete_ssh_key(self, ssh_key_id: str) -> None:
-        endpoint = f"organization/ssh-keys/{ssh_key_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def delete_storage_volume(self, storage_id: str) -> None:
-        endpoint = f"storage/{storage_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    ################
-    # PUT requests #
-    ################
-
-    def put(self, endpoint: str, **params: int | str | bool | None) -> Any:
-        params = {k: v for k, v in params.items() if v is not None}
-        response = requests.put(
-            f"{self._api_url}{endpoint}",
-            headers=self._headers("put"),
-            params=params,
-            timeout=10,
-        )
-        return response.json()
-
-    def put_vm_power_status(
-        self,
-        virtual_machine_id: str,
-        status: Literal["started", "stopped", "stopped_disassociated"],
-    ) -> None:
-        endpoint = f"virtual-machines/{virtual_machine_id}/power-status"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def put_baremetal_rental_power_status(
-        self,
-        baremetal_rental_id: str,
-        status: Literal["started", "stopped"],
-    ) -> None:
-        endpoint = f"bare-metal/{baremetal_rental_id}/power-status"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)

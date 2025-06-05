@@ -109,14 +109,14 @@ class BaremetalRental(BaseModel):
     name: str
     creation_timestamp: str
     status: str
-    power_status: str
-    node_count: int
-    specs_per_node: BaremetalNodeSpec
+    power_status: str | None = None
+    node_count: int | None = None
+    specs_per_node: BaremetalNodeSpec | None = None
     rate_hourly: str
-    network_type: str
-    username: str
-    node_networking: list[NodeNetworking]
-    sub_order: str | None
+    network_type: str | None = None
+    username: str | None = None
+    node_networking: list[NodeNetworking] | None = None
+    sub_order: str | None = None
     storage_id: str | None
     storage_pv: str | None
     storage_pvc: str | None
