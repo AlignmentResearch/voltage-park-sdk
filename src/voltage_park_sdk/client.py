@@ -226,3 +226,77 @@ class VoltageParkClient:
         except ValueError as e:
             msg = f"{param_name} must be in YYYY-MM-DD format (e.g. '2024-01-01')"
             raise ValueError(msg) from e
+
+    ################
+    # POST requests #
+    ################
+
+    def post(self, endpoint: str, **params: int | str | bool | None) -> Any:
+        params = {k: v for k, v in params.items() if v is not None}
+        response = requests.post(
+            f"{self._api_url}{endpoint}",
+            headers=self._headers("post"),
+            params=params,
+            timeout=10,
+        )
+        return response.json()
+
+    def post_new_vm(  # noqa: PLR0913
+        self,
+        config_id: str,
+        password: str | None = None,
+        organization_ssh_keys: dict[str, Any] | None = None,
+        ssh_keys: list[str] | None = None,
+        cloud_init: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+    ) -> str:
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def post_new_baremetal_rental(  # noqa: PLR0913
+        self,
+        location_id: str,
+        gpu_count: int,
+        network_type: Literal["infiniband", "ethernet"],
+        organization_ssh_keys: dict[str, Any] | None = None,
+        ssh_keys: list[str] | None = None,
+        suborder: int | None = None,
+        storage_id: str | None = None,
+        tags: list[str] | None = None,
+        cloudinit_script: dict[str, Any] | None = None,
+    ) -> str:
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def post_reboot_baremetal_rental(
+        self,
+        rental_id: str,
+        public_ips: list[str],
+    ) -> None:
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def post_new_ssh_key(
+        self,
+        name: str,
+        content: str,
+    ) -> str:
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def post_validate_cloudinit_script(
+        self,
+        type: Literal["instant-vm", "vm", "baremetal"],  # noqa: A002
+        content: str,
+    ) -> str:
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def post_new_storage_volume(
+        self,
+        size_in_gb: int,
+        name: str,
+        order_ids: list[str] | None = None,
+    ) -> str:
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
