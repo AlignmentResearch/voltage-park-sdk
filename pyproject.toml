@@ -10,6 +10,8 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "click",
+    "pydantic>=2.11.5",
+    "requests>=2.32.3",
 ]
 
 [project.urls]
@@ -36,6 +38,10 @@ dev = [
     "pytest-github-actions-annotate-failures",
     "pytest-cov",
     "python-kacl",
+    # For testing in a notebook
+    "ipykernel",
+    "pyyaml",
+    "types-requests>=2.32.0.20250602",
 ]
 
 [build-system]
