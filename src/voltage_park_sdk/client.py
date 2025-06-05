@@ -35,8 +35,9 @@ from voltage_park_sdk.datamodel.virtual_machines import (
     VirtualMachineLocations,
     VirtualMachinePatchPayload,
     VirtualMachinePatchResponse,
-    VirtualMachinePowerStatus,
     VirtualMachinePowerStatusOptions,
+    VirtualMachinePowerStatusPayload,
+    VirtualMachinePowerStatusResponse,
     VirtualMachines,
 )
 from voltage_park_sdk.model import (
@@ -180,11 +181,11 @@ class VoltageParkClient:
         self,
         virtual_machine_id: str,
         status: VirtualMachinePowerStatusOptions,
-    ) -> VirtualMachinePowerStatus:
-        payload = VirtualMachinePowerStatus(status=status)
+    ) -> VirtualMachinePowerStatusResponse:
+        payload = VirtualMachinePowerStatusPayload(status=status)
         endpoint = f"virtual-machines/{virtual_machine_id}/power-status"
         response = self.put(endpoint, **payload.model_dump())
-        return self._format_response(response, VirtualMachinePowerStatus)
+        return self._format_response(response, VirtualMachinePowerStatusResponse)
 
     def post_relocate_virtual_machine(
         self,
