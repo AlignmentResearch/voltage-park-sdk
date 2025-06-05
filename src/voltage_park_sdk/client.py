@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import requests
+from pydantic import ValidationError
 
 from voltage_park_sdk.datamodel.baremetal import (
     BaremetalLocations,
@@ -71,7 +72,7 @@ class VoltageParkClient:
         )
         endpoint = "organization"
         response = self.patch(endpoint, **payload.model_dump())
-        return OrganizationPatchResponse(**response)
+        return self._format_response(response, OrganizationPatchResponse)
 
     def get_ssh_keys(
         self,
@@ -80,7 +81,7 @@ class VoltageParkClient:
     ) -> SSHKeys:
         endpoint = "organization/ssh-keys"
         response = self.get(endpoint, limit=limit, offset=offset)
-        return SSHKeys(**response)
+        return self._format_response(response, SSHKeys)
 
     def post_ssh_key(
         self,
@@ -93,7 +94,7 @@ class VoltageParkClient:
         )
         endpoint = "organization/ssh-keys"
         response = self.post(endpoint, **payload.model_dump())
-        return SSHKeyCreateResponse(**response)
+        return self._format_response(response, SSHKeyCreateResponse)
 
     def delete_ssh_key(self, ssh_key_id: str) -> None:
         endpoint = f"organization/ssh-keys/{ssh_key_id}"
@@ -106,7 +107,7 @@ class VoltageParkClient:
     def get_virtual_machine_locations(self) -> VirtualMachineLocations:
         endpoint = "virtual-machines/instant/locations/"
         response = self.get(endpoint)
-        return VirtualMachineLocations(**response)
+        return self._format_response(response, VirtualMachineLocations)
 
     def get_virtual_machine_location(
         self,
@@ -114,9 +115,9 @@ class VoltageParkClient:
     ) -> VirtualMachineLocation:
         endpoint = f"virtual-machines/instant/locations/{location_id}"
         response = self.get(endpoint)
-        return VirtualMachineLocation(**response)
+        return self._format_response(response, VirtualMachineLocation)
 
-    def post_new_virtual_machine(  # noqa: PLR0913
+    def post_virtual_machine(  # noqa: PLR0913
         self,
         config_id: str,
         name: str,
@@ -139,9 +140,9 @@ class VoltageParkClient:
             cloud_init=cloud_init,
             tags=tags,
         )
-        endpoint = "virtual-machines/instant/locations/"
+        endpoint = "virtual-machines/instant"
         response = self.post(endpoint, **payload.model_dump())
-        return VirtualMachineDeployResponse(**response)
+        return self._format_response(response, VirtualMachineDeployResponse)
 
     def get_virtual_machines(
         self,
@@ -150,12 +151,12 @@ class VoltageParkClient:
     ) -> VirtualMachines:
         endpoint = "virtual-machines/"
         response = self.get(endpoint, limit=limit, offset=offset)
-        return VirtualMachines(**response)
+        return self._format_response(response, VirtualMachines)
 
     def get_virtual_machine(self, virtual_machine_id: str) -> VirtualMachine:
         endpoint = f"virtual-machines/{virtual_machine_id}"
         response = self.get(endpoint)
-        return VirtualMachine(**response)
+        return self._format_response(response, VirtualMachine)
 
     def patch_virtual_machine(
         self,
@@ -169,7 +170,7 @@ class VoltageParkClient:
         )
         endpoint = f"virtual-machines/{virtual_machine_id}"
         response = self.patch(endpoint, **payload.model_dump())
-        return VirtualMachinePatchResponse(**response)
+        return self._format_response(response, VirtualMachinePatchResponse)
 
     def delete_virtual_machine(self, virtual_machine_id: str) -> None:
         endpoint = f"virtual-machines/{virtual_machine_id}"
@@ -183,7 +184,7 @@ class VoltageParkClient:
         payload = VirtualMachinePowerStatus(status=status)
         endpoint = f"virtual-machines/{virtual_machine_id}/power-status"
         response = self.put(endpoint, **payload.model_dump())
-        return VirtualMachinePowerStatus(**response)
+        return self._format_response(response, VirtualMachinePowerStatus)
 
     def post_relocate_virtual_machine(
         self,
@@ -199,7 +200,7 @@ class VoltageParkClient:
     def get_baremetal_locations(self) -> BaremetalLocations:
         endpoint = "bare-metal/locations/"
         response = self.get(endpoint)
-        return BaremetalLocations(**response)
+        return self._format_response(response, BaremetalLocations)
 
     def post_new_baremetal_rental(  # noqa: PLR0913
         self,
@@ -224,7 +225,7 @@ class VoltageParkClient:
     ) -> BaremetalRentals:
         endpoint = "bare-metal/"
         response = self.get(endpoint, limit=limit, offset=offset)
-        return BaremetalRentals(**response)
+        return self._format_response(response, BaremetalRentals)
 
     def post_reboot_baremetal_rental(
         self,
@@ -270,12 +271,12 @@ class VoltageParkClient:
     ) -> StorageVolumes:
         endpoint = "storage"
         response = self.get(endpoint, limit=limit, offset=offset)
-        return StorageVolumes(**response)
+        return self._format_response(response, StorageVolumes)
 
     def get_storage_volume(self, storage_id: str) -> StorageVolume:
         endpoint = f"storage/{storage_id}"
         response = self.get(endpoint)
-        return StorageVolume(**response)
+        return self._format_response(response, StorageVolume)
 
     def post_new_storage_volume(
         self,
@@ -323,12 +324,12 @@ class VoltageParkClient:
     def get_billing_hourly_rates(self) -> BillingHourlyRate:
         endpoint = "billing/hourly-rate"
         response = self.get(endpoint)
-        return BillingHourlyRate(**response)
+        return self._format_response(response, BillingHourlyRate)
 
     def get_storage_hourly_rate(self) -> StorageHourlyRate:
         endpoint = "storage/hourly-rate"
         response = self.get(endpoint)
-        return StorageHourlyRate(**response)
+        return self._format_response(response, StorageHourlyRate)
 
     def get_billing_transactions(
         self,
@@ -348,7 +349,7 @@ class VoltageParkClient:
             earliest=earliest,
             latest=latest,
         )
-        return BillingTransactions(**response)
+        return self._format_response(response, BillingTransactions)
 
     def get_monthly_billing_report(
         self,
@@ -357,7 +358,7 @@ class VoltageParkClient:
     ) -> MonthlyBillingReport:
         endpoint = f"billing/reports/{year}/{month}/transactions"
         response = self.get(endpoint)
-        return MonthlyBillingReport(**response)
+        return self._format_response(response, MonthlyBillingReport)
 
     ##################
     # Public helpers #
@@ -371,6 +372,7 @@ class VoltageParkClient:
             data=json.dumps(params),
             timeout=10,
         )
+        response.raise_for_status()
         return response.json()
 
     def post(self, endpoint: str, **params: Any) -> Any:
@@ -381,6 +383,7 @@ class VoltageParkClient:
             data=json.dumps(params),
             timeout=10,
         )
+        response.raise_for_status()
         return response.json()
 
     def patch(self, endpoint: str, **params: Any) -> Any:
@@ -391,6 +394,7 @@ class VoltageParkClient:
             data=json.dumps(params),
             timeout=10,
         )
+        response.raise_for_status()
         return response.json()
 
     def delete(self, endpoint: str) -> Any:
@@ -399,6 +403,7 @@ class VoltageParkClient:
             headers=self._headers("delete"),
             timeout=10,
         )
+        response.raise_for_status()
         try:
             return response.json()
         except json.JSONDecodeError:
@@ -412,6 +417,7 @@ class VoltageParkClient:
             data=json.dumps(params),
             timeout=10,
         )
+        response.raise_for_status()
         return response.json()
 
     ###################
@@ -457,3 +463,12 @@ class VoltageParkClient:
         except ValueError as e:
             msg = f"{param_name} must be in YYYY-MM-DD format (e.g. '2024-01-01')"
             raise ValueError(msg) from e
+
+    def _format_response[ResponseT](
+        self, response: Any, response_class: type[ResponseT]
+    ) -> ResponseT:
+        try:
+            return response_class(**response)
+        except ValidationError as e:
+            print(f"Raw response: {response}")  # noqa: T201
+            raise

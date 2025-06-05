@@ -89,12 +89,30 @@ class VirtualMachineLocations(ListResponse[VirtualMachineLocation]):
 
 
 class VirtualMachinePricing(BaseModel):
-    gpus_per_hr: str
-    vcpu_per_hr: str
-    ram_per_hr: str
-    storage_per_hr: str
-    total_associated_per_hr: str
-    total_disassociated_per_hr: str
+    gpus_per_hr: str = Field(
+        description="The price of the GPUs per hour",
+        gt=0,
+    )
+    vcpu_per_hr: str = Field(
+        description="The price of the vCPUs per hour",
+        gt=0,
+    )
+    ram_per_hr: str = Field(
+        description="The price of the RAM per hour",
+        gt=0,
+    )
+    storage_per_hr: str = Field(
+        description="The price of the storage per hour",
+        gt=0,
+    )
+    total_associated_per_hr: str = Field(
+        description="The price of the total associated per hour",
+        gt=0,
+    )
+    total_disassociated_per_hr: str = Field(
+        description="The price of the total disassociated per hour",
+        gt=0,
+    )
 
 
 class PortForward(BaseModel):

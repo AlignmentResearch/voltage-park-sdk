@@ -85,7 +85,7 @@ class OrganzationSSHKeyAll(BaseModel):
 
 class OrganzationSSHKeySelective(BaseModel):
     mode: Literal["selective"] = "selective"
-    ssh_keys: list[str] = Field(
+    ssh_key_ids: list[str] = Field(
         description="A list of organization SSH keys to use for the rental",
     )
 
@@ -99,13 +99,14 @@ def get_organization_ssh_key(
     ssh_key: dict[str, Any] | OrganizationSSHKey | None,
 ) -> OrganizationSSHKey:
     if isinstance(ssh_key, OrganizationSSHKey):
-        return ssh_key
-    if ssh_key is None or ssh_key.get("mode") is None:
-        return OrganzationSSHKeyNone()
-    if ssh_key.get("mode") == "all":
-        return OrganzationSSHKeyAll()
-    if ssh_key.get("mode") == "selective":
-        return OrganzationSSHKeySelective(ssh_keys=ssh_key.get("ssh_keys", []))
-
-    msg = f"Invalid SSH key mode: {ssh_key.get('mode')}"
-    raise ValueError(msg)
+        out_key = ssh_key
+    elif ssh_key is None or ssh_key.get("mode") is None:
+        out_key = OrganzationSSHKeyNone()
+    elif ssh_key.get("mode") == "all":
+        out_key = OrganzationSSHKeyAll()
+    elif ssh_key.get("mode") == "selective":
+        out_key = OrganzationSSHKeySelective(ssh_key_ids=ssh_key.get("ssh_key_ids", []))
+    else:
+        msg = f"Invalid SSH key mode: {ssh_key.get('mode')}"
+        raise ValueError(msg)
+    return out_key
