@@ -1,6 +1,6 @@
-from typing import Generic, Self, TypeVar
+from typing import Generic, TypeVar
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 
 
 class GPUResource(BaseModel):
@@ -12,35 +12,6 @@ class AvailableResources(BaseModel):
     ram_gb: int
     storage_gb: int
     vcpu_count: int
-
-
-class Pricing(BaseModel):
-    per_gpu_hr: dict[str, str]
-    per_vcpu_hr: str
-    per_gb_ram_hr: str
-    per_gb_storage_hr: str
-
-
-class HostNode(BaseModel):
-    location_id: str
-    available_resources: AvailableResources
-    pricing: Pricing
-    available_ports: list[int]
-
-    @model_validator(mode="after")
-    def validate_gpu_names(self) -> Self:
-        for gpu_name in self.available_resources.gpus:
-            if gpu_name not in self.pricing.per_gpu_hr:
-                msg = f"GPU name {gpu_name} not found in pricing"
-                raise ValueError(msg)
-        return self
-
-
-class Location(BaseModel):
-    city: str
-    region: str
-    country: str
-    hostnodes: list[HostNode]
 
 
 class VMPricing(BaseModel):
@@ -70,15 +41,6 @@ class VirtualMachine(BaseModel):
     port_forwards: list[PortForward]
     timestamp_creation: str
     tags: list[str]
-
-
-class InstantDeployPreset(BaseModel):
-    id: str
-    resources: AvailableResources
-    operating_system: str
-    compute_rate_hourly: str
-    storage_rate_hourly: str
-    location_ids_with_availability: list[str]
 
 
 class BaremetalNodeSpec(BaseModel):
@@ -188,14 +150,6 @@ class ListResponse(BaseModel, Generic[ResponseT]):
     total_result_count: int
     has_previous: bool
     has_next: bool
-
-
-class Locations(ListResponse[Location]):
-    pass
-
-
-class HostNodes(ListResponse[HostNode]):
-    pass
 
 
 class VirtualMachines(ListResponse[VirtualMachine]):

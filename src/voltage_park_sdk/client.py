@@ -16,11 +16,6 @@ from voltage_park_sdk.model import (
     BaremetalRentals,
     BillingHourlyRate,
     BillingTransactions,
-    HostNode,
-    HostNodes,
-    InstantDeployPreset,
-    Location,
-    Locations,
     MonthlyBillingReport,
     SSHKey,
     SSHKeys,
@@ -36,37 +31,6 @@ class VoltageParkClient:
     def __init__(self, token: str | Path) -> None:
         self._api_url = "https://cloud-api.voltagepark.com/api/v1/"
         self._token = token
-
-    #############
-    # Locations #
-    #############
-
-    def get_locations(
-        self,
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> Locations:
-        endpoint = "locations/"
-        response = self.get(endpoint, limit=limit, offset=offset)
-        return Locations(**response)
-
-    def get_location(self, location_id: str) -> Location:
-        endpoint = f"locations/{location_id}"
-        response = self.get(endpoint)
-        return Location(**response)
-
-    #############
-    # Hostnodes #
-    #############
-
-    def get_hostnodes(self) -> HostNodes:
-        msg = "Not implemented by the API"
-        raise NotImplementedError(msg)
-
-    def get_hostnode(self, hostnode_id: str) -> HostNode:
-        endpoint = f"hostnodes/{hostnode_id}"
-        response = self.get(endpoint)
-        return HostNode(**response)
 
     ####################
     # Virtual machines #
@@ -122,23 +86,6 @@ class VoltageParkClient:
         endpoint = f"virtual-machines/{virtual_machine_id}"
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
-
-    ##########################
-    # Instant deploy presets #
-    ##########################
-
-    def get_instant_deploy_presets(
-        self,
-        available: bool | None = None,
-    ) -> list[InstantDeployPreset]:
-        endpoint = "instant-deploy-presets/"
-        response = self.get(endpoint, available=available)
-        return [InstantDeployPreset(**preset) for preset in response]
-
-    def get_instant_deploy_preset(self, preset_id: str) -> InstantDeployPreset:
-        endpoint = f"instant-deploy-presets/{preset_id}"
-        response = self.get(endpoint)
-        return InstantDeployPreset(**response)
 
     #########################
     # Cloudinit validation #
