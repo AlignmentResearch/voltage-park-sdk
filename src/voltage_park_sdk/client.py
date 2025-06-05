@@ -387,3 +387,35 @@ class VoltageParkClient:
         endpoint = f"storage/{storage_id}"
         msg = "Not currently implemented by the SDK"
         raise NotImplementedError(msg)
+
+    ################
+    # PUT requests #
+    ################
+
+    def put(self, endpoint: str, **params: int | str | bool | None) -> Any:
+        params = {k: v for k, v in params.items() if v is not None}
+        response = requests.put(
+            f"{self._api_url}{endpoint}",
+            headers=self._headers("put"),
+            params=params,
+            timeout=10,
+        )
+        return response.json()
+
+    def put_vm_power_status(
+        self,
+        virtual_machine_id: str,
+        status: Literal["started", "stopped", "stopped_disassociated"],
+    ) -> None:
+        endpoint = f"virtual-machines/{virtual_machine_id}/power-status"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
+
+    def put_baremetal_rental_power_status(
+        self,
+        baremetal_rental_id: str,
+        status: Literal["started", "stopped"],
+    ) -> None:
+        endpoint = f"bare-metal/{baremetal_rental_id}/power-status"
+        msg = "Not currently implemented by the SDK"
+        raise NotImplementedError(msg)
