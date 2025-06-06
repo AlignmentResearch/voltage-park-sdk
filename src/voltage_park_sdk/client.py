@@ -11,8 +11,25 @@ import requests
 from pydantic import ValidationError
 
 from voltage_park_sdk.datamodel.baremetal import (
+    BaremetalCloudInit,
     BaremetalLocations,
+    BaremetalNetworkTypeOptions,
+    BaremetalRentalCreatePayload,
+    BaremetalRentalCreateResponse,
+    BaremetalRentalPatchPayload,
+    BaremetalRentalPatchResponse,
+    BaremetalRentalPowerStatusPayload,
+    BaremetalRentalPutPowerStatusOptions,
+    BaremetalRentalRebootNodesPayload,
+    BaremetalRentalRemoveNodesPayload,
     BaremetalRentals,
+)
+from voltage_park_sdk.datamodel.billing import (
+    BillingHourlyRate,
+    BillingResourceTypeOptions,
+    BillingTransactionsPayload,
+    BillingTransactionsResponse,
+    MonthlyBillingReport,
 )
 from voltage_park_sdk.datamodel.organization import (
     Organization,
@@ -25,6 +42,20 @@ from voltage_park_sdk.datamodel.organization import (
 from voltage_park_sdk.datamodel.shared import (
     OrganizationSSHKey,
     get_organization_ssh_key,
+)
+from voltage_park_sdk.datamodel.storage import (
+    StorageHourlyRate,
+    StorageVolumeCreatePayload,
+    StorageVolumeCreateResponse,
+    StorageVolumeGetResponse,
+    StorageVolumePatchPayload,
+    StorageVolumePatchResponse,
+    StorageVolumesGetResponse,
+)
+from voltage_park_sdk.datamodel.validation import (
+    CloudinitValidationPayload,
+    CloudinitValidationResponse,
+    CloudinitValidationTypeOptions,
 )
 from voltage_park_sdk.datamodel.virtual_machines import (
     VirtualMachine,
@@ -39,14 +70,6 @@ from voltage_park_sdk.datamodel.virtual_machines import (
     VirtualMachinePowerStatusPayload,
     VirtualMachinePowerStatusResponse,
     VirtualMachines,
-)
-from voltage_park_sdk.model import (
-    BillingHourlyRate,
-    BillingTransactions,
-    MonthlyBillingReport,
-    StorageHourlyRate,
-    StorageVolume,
-    StorageVolumes,
 )
 
 
@@ -97,9 +120,11 @@ class VoltageParkClient:
         response = self.post(endpoint, **payload.model_dump())
         return self._format_response(response, SSHKeyCreateResponse)
 
-    def delete_ssh_key(self, ssh_key_id: str) -> None:
+    def delete_ssh_key(self, ssh_key_id: str) -> Any:
         endpoint = f"organization/ssh-keys/{ssh_key_id}"
-        self.delete(endpoint)
+        # Don't decode the response, as it's None if the key was deleted
+        # and we want the raw response if there was an error
+        return self.delete(endpoint)
 
     ####################
     # Virtual machines #
@@ -173,9 +198,11 @@ class VoltageParkClient:
         response = self.patch(endpoint, **payload.model_dump())
         return self._format_response(response, VirtualMachinePatchResponse)
 
-    def delete_virtual_machine(self, virtual_machine_id: str) -> None:
+    def delete_virtual_machine(self, virtual_machine_id: str) -> Any:
         endpoint = f"virtual-machines/{virtual_machine_id}"
-        self.delete(endpoint)
+        # Don't decode the response, as it's None if the VM was deleted
+        # and we want the raw response if there was an error
+        return self.delete(endpoint)
 
     def put_vm_power_status(
         self,
@@ -190,9 +217,11 @@ class VoltageParkClient:
     def post_relocate_virtual_machine(
         self,
         virtual_machine_id: str,
-    ) -> None:
+    ) -> Any:
         endpoint = f"virtual-machines/{virtual_machine_id}/relocate"
-        self.post(endpoint)
+        # Don't decode the response, as it's None if the VM was relocated
+        # and we want the raw response if there was an error
+        return self.post(endpoint)
 
     #####################
     # Baremetal rentals #
@@ -203,21 +232,38 @@ class VoltageParkClient:
         response = self.get(endpoint)
         return self._format_response(response, BaremetalLocations)
 
-    def post_new_baremetal_rental(  # noqa: PLR0913
+    def post_baremetal_rental(  # noqa: PLR0913
         self,
         location_id: str,
         gpu_count: int,
-        network_type: Literal["infiniband", "ethernet"],
-        organization_ssh_keys: dict[str, Any] | None = None,
+        name: str,
+        network_type: BaremetalNetworkTypeOptions,
+        organization_ssh_keys: OrganizationSSHKey | dict[str, Any] | None = None,
         ssh_keys: list[str] | None = None,
         suborder: int | None = None,
         storage_id: str | None = None,
         tags: list[str] | None = None,
-        cloudinit_script: dict[str, Any] | None = None,
-    ) -> str:
+        cloudinit_script: BaremetalCloudInit | dict[str, Any] | None = None,
+    ) -> BaremetalRentalCreateResponse:
+        organization_ssh_keys = get_organization_ssh_key(organization_ssh_keys)
+        if isinstance(cloudinit_script, dict):
+            cloudinit_script = BaremetalCloudInit(**cloudinit_script)
+
         endpoint = "bare-metal/"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
+        payload = BaremetalRentalCreatePayload(
+            location_id=location_id,
+            gpu_count=gpu_count,
+            name=name,
+            organization_ssh_keys=organization_ssh_keys,
+            ssh_keys=ssh_keys,
+            network_type=network_type,
+            suborder=suborder,
+            storage_id=storage_id,
+            tags=tags,
+            cloudinit_script=cloudinit_script,
+        )
+        response = self.post(endpoint, **payload.model_dump())
+        return self._format_response(response, BaremetalRentalCreateResponse)
 
     def get_baremetal_rentals(
         self,
@@ -228,129 +274,92 @@ class VoltageParkClient:
         response = self.get(endpoint, limit=limit, offset=offset)
         return self._format_response(response, BaremetalRentals)
 
-    def post_reboot_baremetal_rental(
+    def put_baremetal_rental_power_status(
         self,
         baremetal_rental_id: str,
-        public_ips: list[str],
-    ) -> None:
-        endpoint = f"bare-metal/{baremetal_rental_id}/reboot"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
+        status: BaremetalRentalPutPowerStatusOptions,
+    ) -> Any:
+        payload = BaremetalRentalPowerStatusPayload(status=status)
+        endpoint = f"bare-metal/{baremetal_rental_id}/power-status"
+        # Don't decode the response as it's None if the power status was
+        # properly set and we want the raw response if there was an error
+        # or we tried to set the power status to the same value as the current
+        # power status
+        return self.put(endpoint, **payload.model_dump())
+
+    def delete_baremetal_rental(self, baremetal_rental_id: str) -> Any:
+        endpoint = f"bare-metal/{baremetal_rental_id}"
+        # Don't decode the response, as it's None if the rental was deleted
+        # and we want the raw response if there was an error
+        return self.delete(endpoint)
 
     def patch_baremetal_rental(
         self,
         baremetal_rental_id: str,
         name: str | None = None,
         tags: list[str] | None = None,
-    ) -> None:
+    ) -> BaremetalRentalPatchResponse:
+        payload = BaremetalRentalPatchPayload(
+            name=name,
+            tags=tags,
+        )
         endpoint = f"bare-metal/{baremetal_rental_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
+        response = self.patch(endpoint, **payload.model_dump())
+        return self._format_response(response, BaremetalRentalPatchResponse)
 
-    def put_baremetal_rental_power_status(
+    def post_reboot_baremetal_rental_nodes(
         self,
         baremetal_rental_id: str,
-        status: Literal["started", "stopped"],
-    ) -> None:
-        endpoint = f"bare-metal/{baremetal_rental_id}/power-status"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
+        public_ips: list[str],
+    ) -> Any:
+        endpoint = f"bare-metal/{baremetal_rental_id}/reboot"
+        payload = BaremetalRentalRebootNodesPayload(
+            public_ips=public_ips,
+        )
+        # Don't decode the response, as it's None if the nodes were rebooted
+        # and we want the raw response if there was an error
+        return self.post(endpoint, **payload.model_dump())
 
-    def delete_baremetal_rental(self, baremetal_rental_id: str) -> None:
-        endpoint = f"bare-metal/{baremetal_rental_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    ###########
-    # Storage #
-    ###########
-
-    def get_storage_volumes(
+    def patch_remove_baremetal_rental_nodes(
         self,
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> StorageVolumes:
-        endpoint = "storage"
-        response = self.get(endpoint, limit=limit, offset=offset)
-        return self._format_response(response, StorageVolumes)
-
-    def get_storage_volume(self, storage_id: str) -> StorageVolume:
-        endpoint = f"storage/{storage_id}"
-        response = self.get(endpoint)
-        return self._format_response(response, StorageVolume)
-
-    def post_new_storage_volume(
-        self,
-        size_in_gb: int,
-        name: str,
-        order_ids: list[str] | None = None,
-    ) -> str:
-        endpoint = "storage"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def patch_storage_volume(
-        self,
-        storage_id: str,
-        size_in_gb: int | None = None,
-        name: str | None = None,
-        order_ids: list[str] | None = None,
-    ) -> None:
-        endpoint = f"storage/{storage_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    def delete_storage_volume(self, storage_id: str) -> None:
-        endpoint = f"storage/{storage_id}"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
-
-    #########################
-    # Cloudinit validation #
-    #########################
-
-    def post_validate_cloudinit_script(
-        self,
-        type: Literal["instant-vm", "vm", "baremetal"],  # noqa: A002
-        content: str,
-    ) -> str:
-        endpoint = "validate/cloudinit"
-        msg = "Not currently implemented by the SDK"
-        raise NotImplementedError(msg)
+        baremetal_rental_id: str,
+        public_ips: list[str],
+    ) -> Any:
+        endpoint = f"bare-metal/{baremetal_rental_id}/remove-nodes"
+        payload = BaremetalRentalRemoveNodesPayload(
+            public_ips=public_ips,
+        )
+        # Don't decode the response, as it's None if the nodes were removed
+        # and we want the raw response if there was an error
+        return self.patch(endpoint, **payload.model_dump())
 
     ###########
     # Billing #
     ###########
 
-    def get_billing_hourly_rates(self) -> BillingHourlyRate:
+    def get_billing_hourly_rate(self) -> BillingHourlyRate:
         endpoint = "billing/hourly-rate"
         response = self.get(endpoint)
         return self._format_response(response, BillingHourlyRate)
-
-    def get_storage_hourly_rate(self) -> StorageHourlyRate:
-        endpoint = "storage/hourly-rate"
-        response = self.get(endpoint)
-        return self._format_response(response, StorageHourlyRate)
 
     def get_billing_transactions(
         self,
         limit: int | None = None,
         offset: int | None = None,
+        types: list[BillingResourceTypeOptions] | None = None,
         earliest: str | None = None,
         latest: str | None = None,
-    ) -> BillingTransactions:
-        self._validate_date_format(earliest, "earliest")
-        self._validate_date_format(latest, "latest")
-
-        endpoint = "billing/transactions/"
-        response = self.get(
-            endpoint,
+    ) -> BillingTransactionsResponse:
+        payload = BillingTransactionsPayload(
             limit=limit,
             offset=offset,
+            types=types,
             earliest=earliest,
             latest=latest,
         )
-        return self._format_response(response, BillingTransactions)
+        endpoint = "billing/transactions/"
+        response = self.get(endpoint, **payload.model_dump())
+        return self._format_response(response, BillingTransactionsResponse)
 
     def get_monthly_billing_report(
         self,
@@ -360,6 +369,85 @@ class VoltageParkClient:
         endpoint = f"billing/reports/{year}/{month}/transactions"
         response = self.get(endpoint)
         return self._format_response(response, MonthlyBillingReport)
+
+    #########################
+    # Cloudinit validation #
+    #########################
+
+    def post_validate_cloudinit_script(
+        self,
+        type: CloudinitValidationTypeOptions,  # noqa: A002
+        content: str,
+    ) -> CloudinitValidationResponse:
+        payload = CloudinitValidationPayload(
+            type=type,
+            content=content,
+        )
+        endpoint = "validate/cloudinit"
+        response = self.post(endpoint, **payload.model_dump())
+        return self._format_response(response, CloudinitValidationResponse)
+
+    ###########
+    # Storage #
+    ###########
+
+    def get_storage_hourly_rate(self) -> StorageHourlyRate:
+        endpoint = "storage/hourly-rate"
+        response = self.get(endpoint)
+        return self._format_response(response, StorageHourlyRate)
+
+    def get_storage_volumes(
+        self,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> StorageVolumesGetResponse:
+        endpoint = "storage"
+        response = self.get(endpoint, limit=limit, offset=offset)
+        return self._format_response(response, StorageVolumesGetResponse)
+
+    def get_storage_volume(self, storage_id: str) -> StorageVolumeGetResponse:
+        endpoint = f"storage/{storage_id}"
+        response = self.get(endpoint)
+        return self._format_response(response, StorageVolumeGetResponse)
+
+    def post_new_storage_volume(
+        self,
+        size_in_gb: int,
+        name: str,
+        order_ids: list[str],
+    ) -> StorageVolumeCreateResponse:
+        endpoint = "storage"
+        payload = StorageVolumeCreatePayload(
+            size_in_gb=size_in_gb,
+            name=name,
+            order_ids=order_ids,
+        )
+        response = self.post(endpoint, **payload.model_dump())
+        return self._format_response(response, StorageVolumeCreateResponse)
+
+    def patch_storage_volume(
+        self,
+        storage_id: str,
+        size_in_gb: int | None = None,
+        name: str | None = None,
+        order_ids: list[str] | None = None,
+    ) -> Any:
+        endpoint = f"storage/{storage_id}"
+        payload = StorageVolumePatchPayload(
+            size_in_gb=size_in_gb,
+            name=name,
+            order_ids=order_ids,
+        )
+        # Don't decode the response, as it's None if the storage volume was
+        # patched and we want the raw response if there was an error
+        response = self.patch(endpoint, **payload.model_dump())
+        return self._format_response(response, StorageVolumePatchResponse)
+
+    def delete_storage_volume(self, storage_id: str) -> Any:
+        endpoint = f"storage/{storage_id}"
+        # Don't decode the response, as it's None if the storage volume was
+        # deleted and we want the raw response if there was an error
+        return self.delete(endpoint)
 
     ##################
     # Public helpers #
