@@ -72,6 +72,8 @@ from voltage_park_sdk.datamodel.virtual_machines import (
     VirtualMachines,
 )
 
+DEFAULT_TIMEOUT = 30  # seconds
+
 
 class VoltageParkClient:
     def __init__(self, token: str | Path) -> None:
@@ -459,7 +461,7 @@ class VoltageParkClient:
             f"{self._api_url}{endpoint}",
             headers=self._headers("get"),
             data=json.dumps(params),
-            timeout=10,
+            timeout=DEFAULT_TIMEOUT,
         )
         response.raise_for_status()
         return response.json()
@@ -470,7 +472,7 @@ class VoltageParkClient:
             f"{self._api_url}{endpoint}",
             headers=self._headers("post"),
             data=json.dumps(params),
-            timeout=10,
+            timeout=DEFAULT_TIMEOUT,
         )
         response.raise_for_status()
         return response.json()
@@ -481,7 +483,7 @@ class VoltageParkClient:
             f"{self._api_url}{endpoint}",
             headers=self._headers("patch"),
             data=json.dumps(params),
-            timeout=10,
+            timeout=DEFAULT_TIMEOUT,
         )
         response.raise_for_status()
         return response.json()
@@ -490,7 +492,7 @@ class VoltageParkClient:
         response = requests.delete(
             f"{self._api_url}{endpoint}",
             headers=self._headers("delete"),
-            timeout=10,
+            timeout=DEFAULT_TIMEOUT,
         )
         response.raise_for_status()
         try:
@@ -504,7 +506,7 @@ class VoltageParkClient:
             f"{self._api_url}{endpoint}",
             headers=self._headers("put"),
             data=json.dumps(params),
-            timeout=10,
+            timeout=DEFAULT_TIMEOUT,
         )
         response.raise_for_status()
         return response.json()
